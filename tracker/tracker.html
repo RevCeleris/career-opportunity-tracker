@@ -48,7 +48,7 @@ section[role=tabpanel]{display:grid;gap:16px}
 .links{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
 a{color:var(--accent)}
 .hdr{position:relative}.featbox{float:right;margin:0 0 8px 16px;background:var(--surface);border:2px solid var(--accent);border-radius:8px;padding:6px 10px;font-size:13px}.feathead{font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.featrow{display:flex;align-items:center;gap:8px;padding:3px 0}.featrow b{min-width:72px;font-weight:600}.featrow label{display:flex;gap:4px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0}.featrow label.dis{opacity:.45}.featrow .pill{width:58px;text-align:center}
-.recent-row{margin:6px 0}.pill{display:inline-block;border-radius:4px;padding:1px 8px;font:500 12px var(--body)}
+.licline{margin:0 0 4px;font-size:12px}.recent-row{margin:6px 0}.pill{display:inline-block;border-radius:4px;padding:1px 8px;font:500 12px var(--body)}
 .p-new{background:var(--accent-soft);color:var(--accent)}.p-mid{background:var(--warn-soft);color:var(--warn)}.p-good{background:var(--ok-soft);color:var(--ok)}.p-done{background:var(--bad-soft);color:var(--bad)}
 .sigs{margin:10px 0 0;padding-left:18px;font-size:13px}.sigs li{margin-bottom:3px}.sigs .d{font-family:var(--mono);color:var(--muted);font-size:12px}
 .sect{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:8px}
@@ -126,6 +126,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
 <div class="wrap">
   <header class="hdr">
     <div class="featbox" id="feat-box"><div class="feathead">Features <span class="saved" id="feat-msg"></span></div><div id="feat-rows"></div></div>
+    <p class="note licline">Free for personal use only. To share it, send people to <a href="https://www.doovli.app" target="_blank" rel="noopener">doovli.app</a>. Not for sale or use in a paid product.</p>
     <h1>Career Opportunity Tracker</h1>
     <p class="sub">Job openings and fractional prospects in one place. Searches add new ones each Monday and Thursday, an email check updates records from your inbox twice each weekday, and the Dashboard pulls both sides together, including your weekly work search log.</p>
   </header>
@@ -256,7 +257,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
       <div class="rowb"><button class="btn primary" type="submit">Save settings</button><span class="saved" id="set-msg"></span></div>
     </form>
   </section>
-  <p class="note" style="text-align:center;margin-top:24px">Based on the Career Opportunity Tracker by Rich Henderson. Shared under CC BY-NC 4.0. <span id="app-ver"></span></p>
+  <p class="note" style="text-align:center;margin-top:24px">Career Opportunity Tracker by Rich Henderson. Free for personal use only. To share it, send people to <a href="https://www.doovli.app" target="_blank" rel="noopener">doovli.app</a> so they get the current version and the install guide. Do not sell it, charge for it, or include it in a paid product or service. Shared under CC BY-NC 4.0. <span id="app-ver"></span></p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
