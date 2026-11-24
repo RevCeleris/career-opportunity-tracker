@@ -19,10 +19,10 @@ APPLY MODE (started by my "Update now" button; the message starts "ACTIVITY ID: 
 3. Read document "settings/tasks". For each of jobs, frac, assist, email and update that has a task ID:
    a. Download the matching task text. It contains placeholders written as TRACKER_URL and TIMEZONE inside double curly braces. Replace each TRACKER_URL placeholder with my tracker link and each TIMEZONE placeholder with my time zone, both given at the top of these instructions.
    b. Read that scheduled task's current instructions with list_triggers. If they contain instructions that are specific to me and are not in the new text, such as a named company, a person's name or a rule I added, copy them to the end of the new text under the heading "My own additions" so nothing I set up is lost.
-   c. Replace the task's instructions with the result using update_trigger. Keep its name, schedule and other settings. Update this task (update) last.
-4. If any step after step 2 fails, keep going with the rest and list what failed in the result.
-5. Update "settings/update" (op "update" with if_version): installed = the new version, installedAt ISO now, applying = {"__delete__": true}.
-6. Read collection "activity" doc <id> and op "update" with if_version: status "done" (or "failed"), finishedAt ISO now, result: one short sentence such as "Updated to version 4.1. Reload the page to see it." plus any items carried into "My own additions" or that failed.
-7. Send a PushNotification with that result and the link {{TRACKER_URL}}#dashboard. Never claim the update worked unless step 2 succeeded.
+   c. Do not change any scheduled task yourself. Changing a task needs my approval, which I give on the tracker page.
+4. Update "settings/update" (op "update" with if_version): installed = the new version, installedAt ISO now, applying = {"__delete__": true}, and pendingTasks = an object with one entry per task from step 3, keyed jobs, frac, assist, email or update, each {id: the task ID, prompt: the finished text}. The tracker page shows me a button to approve these changes.
+5. If any step after step 2 fails, keep going with the rest and list what failed in the result.
+6. Read collection "activity" doc <id> and op "update" with if_version: status "done" (or "failed"), finishedAt ISO now, result: one short sentence such as "Version 4.1 installed. Approve your scheduled task updates on the Dashboard, then reload the page." plus any items carried into "My own additions" or that failed.
+7. Send a PushNotification saying the new version is installed and the task updates are waiting for approval on the Dashboard, and the link {{TRACKER_URL}}#dashboard. Never claim the update worked unless step 2 succeeded.
 
 Style: no em dashes or en dashes, plain professional language.

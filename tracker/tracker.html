@@ -257,7 +257,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
       <div class="rowb"><button class="btn primary" type="submit">Save settings</button><span class="saved" id="set-msg"></span></div>
     </form>
   </section>
-  <p class="note" style="text-align:center;margin-top:24px">Career Opportunity Tracker by Rich Henderson. Free for personal use only. To share it, send people to <a href="https://www.doovli.app" target="_blank" rel="noopener">doovli.app</a> so they get the current version and the install guide. Do not sell it, charge for it, or include it in a paid product or service. Shared under CC BY-NC 4.0. <span id="app-ver"></span></p>
+  <p class="note" style="text-align:center;margin-top:24px">Career Opportunity Tracker by Rich Henderson. Free for personal use only. To share it, send people to <a href="https://www.doovli.app" target="_blank" rel="noopener">doovli.app</a> so they get the current version and the install guide. You may not sell it, charge for it, or include it in a paid product or service. Shared under CC BY-NC 4.0. <span id="app-ver"></span></p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
@@ -467,11 +467,26 @@ function statBox(n,l){return `<div class="stat"><b>${n}</b><span>${esc(l)}</span
 function vnum(v){return String(v||"0").split(".").map(n=>+n||0)}
 function newer(a,b){const x=vnum(a),y=vnum(b);for(let i=0;i<Math.max(x.length,y.length);i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)>(y[i]||0)}return false}
 let updateInfo={};
-function renderUpdate(){const av=$("app-ver");if(av)av.textContent="Version "+APP_VERSION;const u=updateInfo,el=$("update-banner");if(!u.version||!newer(u.version,APP_VERSION)||u.dismissed===u.version){el.hidden=true;return}
-  el.hidden=false;el.innerHTML=`<div><b>Version ${esc(u.version)} of the Career Opportunity Tracker is out.</b> You have ${APP_VERSION}.</div>${u.notes?`<div style="white-space:pre-wrap;font-size:14px">${esc(u.notes)}</div>`:""}<div class="rowb">${mcp&&canWrite&&triggerOk(T_UPDATE)?`<button class="btn primary sm" type="button" id="update-now">Update now</button>`:""}${isUrl(u.url)?`<a class="btn sm" href="${esc(u.url)}" target="_blank" rel="noopener">See what's new</a>`:""}<button class="btn sm" type="button" id="update-dismiss">Hide until the next version</button></div><div class="note" id="update-msg">${u.applying&&u.applying===u.version?"Updating now. This takes a few minutes. When the update shows as done under Activity, reload this page.":"Update now keeps your link and every record. It replaces this page and your scheduled task instructions with the new version."}</div>`;
-  $("update-dismiss").onclick=()=>db.doc("settings/update").update({dismissed:u.version}).catch(()=>{});
+function renderUpdate(){const av=$("app-ver");if(av)av.textContent="Version "+APP_VERSION;const u=updateInfo,el=$("update-banner");
+  const pend=u.pendingTasks&&typeof u.pendingTasks==="object"&&Object.keys(u.pendingTasks).length?u.pendingTasks:null;
+  const canAct=mcp&&canWrite;
+  if(pend){
+    el.hidden=false;
+    el.innerHTML=`<div><b>Last step: approve your scheduled task updates.</b></div><div style="font-size:14px">Version ${esc(u.version||"")} is installed${newer(u.version||"0",APP_VERSION)?" (reload this page to see it)":""}. Your scheduled tasks are ready to switch to the new instructions. Anything you set up yourself is kept under "My own additions". Claude may ask you to allow each change.</div><div class="rowb">${canAct?`<button class="btn primary sm" type="button" id="update-finish">Approve task updates (${Object.keys(pend).length})</button>`:""}</div><div class="note" id="update-msg"></div>`;
+    const fb=$("update-finish");if(fb)fb.onclick=async()=>{fb.disabled=true;const msg=$("update-msg");const done=[],failed=[];
+      for(const [k,t] of Object.entries(pend)){msg.textContent="Updating "+k+"...";
+        try{if(!t||!triggerOk(t.id)||!t.prompt)throw 0;await mcp.callTool("Claude Code Remote","update_trigger",{trigger_id:t.id,prompt:t.prompt},{cache:false});done.push(k)}catch(e){failed.push(k)}}
+      const rest={};failed.forEach(k=>rest[k]=pend[k]);
+      try{await db.doc("settings/update").update({pendingTasks:failed.length?rest:{"__delete__":true},tasksAppliedAt:new Date().toISOString()})}catch(_){}
+      msg.textContent=failed.length?("Updated: "+(done.join(", ")||"none")+". Not updated: "+failed.join(", ")+". Click the button to try those again."):"Done. All scheduled tasks are updated. Reload this page if it still shows the old version number.";
+      fb.disabled=false};
+    return}
+  if(!u.version||!newer(u.version,APP_VERSION)||u.dismissed===u.version){el.hidden=true;return}
+  const applying=u.applying&&u.applying===u.version;
+  el.hidden=false;el.innerHTML=`<div><b>Version ${esc(u.version)} of the Career Opportunity Tracker is out.</b> You have ${APP_VERSION}.</div>${u.notes?`<div style="white-space:pre-wrap;font-size:14px">${esc(u.notes)}</div>`:""}<div class="rowb">${canAct&&triggerOk(T_UPDATE)&&!applying?`<button class="btn primary sm" type="button" id="update-now">Update now</button>`:""}${isUrl(u.url)?`<a class="btn sm" href="${esc(u.url)}" target="_blank" rel="noopener">See what's new</a>`:""}${applying?"":`<button class="btn sm" type="button" id="update-dismiss">Hide until the next version</button>`}</div><div class="note" id="update-msg">${applying?"Updating now. This takes about five minutes. When it is ready, this notice asks you to approve your scheduled task updates. Stay nearby so you can approve them.":"The update takes about five minutes and keeps your link and every record. At the end you approve updates to your scheduled tasks here on this page, so start it when you can stay nearby."}</div>`;
+  const dm=$("update-dismiss");if(dm)dm.onclick=()=>db.doc("settings/update").update({dismissed:u.version}).catch(()=>{});
   const un=$("update-now");if(un)un.onclick=async()=>{un.disabled=true;$("update-msg").textContent="Starting the update...";
-    try{await startTask(T_UPDATE,"update","Update to version "+u.version,null,"MODE: APPLY UPDATE\nVERSION: "+u.version);await db.doc("settings/update").update({applying:u.version}).catch(()=>{});$("update-msg").textContent="Updating now. This takes a few minutes. When the update shows as done under Activity, reload this page."}
+    try{await startTask(T_UPDATE,"update","Update to version "+u.version,null,"MODE: APPLY UPDATE\nVERSION: "+u.version);await db.doc("settings/update").update({applying:u.version}).catch(()=>{})}
     catch(e){un.disabled=false;$("update-msg").textContent="The update did not start. Try again in a minute."}};}
 /* ---------- feature switches ---------- */
 const FEAT={jobs:{label:"Jobs",what:"job search"},frac:{label:"Fractional",what:"prospect search"}};
