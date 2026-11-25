@@ -4,6 +4,8 @@ ACTIVITY: If the run message contains "ACTIVITY ID: <id>", the run was started f
 
 SEARCH DEPTH: WebSearch has a mode setting. Use mode "extended" whenever you search to confirm that a posting is still open (STEP 2A watch checks, STEP 3 and STEP 5). Use mode "standard" for the discovery searches in STEP 2.
 
+ONE PROFILE: If the run message contains "SEARCH ONLY IEP: <id>", this run covers only that IEP: in STEP 2 search only that IEP, in STEP 2A check watched companies only for roles that fit that IEP, and still do STEP 5 for all existing roles. Mention in the final message that the run covered only that IEP.
+
 STEP 0. Read document "settings/main" and look at features.jobs. If features or features.jobs is missing, Jobs is active. If features.jobs.on is false, Jobs is turned off: change nothing, do the ACTIVITY step with status "done" and result "Jobs is turned off, so the search did not run" if there is an ACTIVITY ID, and stop without sending any message. If features.jobs.paused is true and the run message has no ACTIVITY ID, Jobs is paused: change nothing and stop silently. A run started from the page while paused goes ahead. If the collection "ieps" is empty, change nothing, finish the ACTIVITY step with result "No IEPs yet. Upload your resume in the tracker first", and stop.
 
 WHAT TO SEARCH FOR comes from the tracker, not from this prompt:

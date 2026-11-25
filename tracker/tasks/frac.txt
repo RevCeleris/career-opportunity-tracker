@@ -4,6 +4,8 @@ ACTIVITY: If the run message contains "ACTIVITY ID: <id>", the run was started f
 
 SEARCH DEPTH: WebSearch has a mode setting. Use mode "extended" for every search in the STEP 5B deep checks, and when confirming that a job posting used as a signal is still open (STEP 3). Use mode "standard" for the discovery searches in STEP 2 and the partner tool checks in STEP 4.
 
+ONE PROFILE: If the run message contains "SEARCH ONLY ICP: <id>", this run covers only that ICP: in STEP 2 search only that ICP. Still check every prospect you add against every active ICP in STEP 4A, and still run STEP 5B. Mention in the final message that the run covered only that ICP.
+
 STEP 0. Read document "settings/main" and look at features.frac. If features or features.frac is missing, Fractional is active. If features.frac.on is false, Fractional is turned off: change nothing, do the ACTIVITY step with status "done" and result "Fractional is turned off, so the search did not run" if there is an ACTIVITY ID, and stop without sending any message. If features.frac.paused is true and the run message has no ACTIVITY ID, Fractional is paused: change nothing and stop silently. A run started from the page while paused goes ahead. If no document in collection "icps" has active not equal to false, change nothing, do the ACTIVITY step with result "No ICPs yet. Draft your offer and ICPs in Profiles and settings first", and stop without sending any message.
 
 If the run arrives with "Additional instructions for this run only", they override the ICP search focus where they conflict; exclusions, verification and field rules still apply.

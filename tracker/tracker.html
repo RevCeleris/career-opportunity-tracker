@@ -48,7 +48,7 @@ section[role=tabpanel]{display:grid;gap:16px}
 .links{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
 a{color:var(--accent)}
 .hdr{position:relative}.featbox{float:right;margin:0 0 8px 16px;background:var(--surface);border:2px solid var(--accent);border-radius:8px;padding:6px 10px;font-size:13px}.feathead{font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.featrow{display:flex;align-items:center;gap:8px;padding:3px 0}.featrow b{min-width:72px;font-weight:600}.featrow label{display:flex;gap:4px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0}.featrow label.dis{opacity:.45}.featrow .pill{width:58px;text-align:center}
-.licline{margin:0 0 4px;font-size:12px}.recent-row{margin:6px 0}.pill{display:inline-block;border-radius:4px;padding:1px 8px;font:500 12px var(--body)}
+.scope{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:14px;text-transform:none;letter-spacing:0;color:var(--ink)}.scope select{width:auto;min-width:160px}.licline{margin:0 0 4px;font-size:12px}.recent-row{margin:6px 0}.pill{display:inline-block;border-radius:4px;padding:1px 8px;font:500 12px var(--body)}
 .p-new{background:var(--accent-soft);color:var(--accent)}.p-mid{background:var(--warn-soft);color:var(--warn)}.p-good{background:var(--ok-soft);color:var(--ok)}.p-done{background:var(--bad-soft);color:var(--bad)}
 .sigs{margin:10px 0 0;padding-left:18px;font-size:13px}.sigs li{margin-bottom:3px}.sigs .d{font-family:var(--mono);color:var(--muted);font-size:12px}
 .sect{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:8px}
@@ -172,7 +172,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
         <label class="wkf" for="j-week">Week applied<select id="j-week"></select></label>
         <label class="wkf srch" for="j-q">Search<input id="j-q" type="search" placeholder="Job title or company" autocomplete="off"></label>
       </div>
-      <div class="rowb"><button class="btn" id="toggle-resume" type="button">My resume</button><button class="btn" id="toggle-addjob" type="button">Add a role</button><button class="btn primary" id="run-jobs" type="button" hidden>Run job search now</button></div>
+      <div class="rowb"><button class="btn" id="toggle-resume" type="button">My resume</button><button class="btn" id="toggle-addjob" type="button">Add a role</button><label class="runnotes scope" for="jobs-scope" hidden>Run for<select id="jobs-scope"><option value="">All IEPs</option></select></label><button class="btn primary" id="run-jobs" type="button" hidden>Run job search now</button></div>
     </div>
     <label for="jobs-notes" class="runnotes" hidden>Instructions for the next job search (optional)<textarea id="jobs-notes" style="min-height:52px" placeholder="e.g. Also look at Bid Manager roles this time."></textarea></label>
     <p class="warnline note" id="resume-warn" hidden>Add your base resume under "My resume" to turn on tailored resumes and cover letters.</p>
@@ -206,7 +206,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
         <label class="wkf" for="f-off">Offering<select id="f-off"></select></label>
         <label class="wkf srch" for="f-q">Search<input id="f-q" type="search" placeholder="Company, signal, note" autocomplete="off"></label>
       </div>
-      <div class="rowb"><button class="btn" id="toggle-addp" type="button">Add a prospect</button><button class="btn primary" id="run-frac" type="button" hidden>Run prospect search now</button></div>
+      <div class="rowb"><button class="btn" id="toggle-addp" type="button">Add a prospect</button><label class="runnotes scope" for="frac-scope" hidden>Run for<select id="frac-scope"><option value="">All ICPs</option></select></label><button class="btn primary" id="run-frac" type="button" hidden>Run prospect search now</button></div>
     </div>
     <label for="frac-notes" class="runnotes" hidden>Instructions for the next prospect search (optional)<textarea id="frac-notes" style="min-height:52px" placeholder="e.g. Focus on the Security and DD ICP this time."></textarea></label>
     <form class="panel" id="addp-form" hidden>
@@ -266,7 +266,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ================= constants ================= */
-const APP_VERSION="4.0";
+const APP_VERSION="4.1";
 let T_JOBS="",T_FRAC="",T_ASSIST="",T_EMAIL="",T_UPDATE="";
 const JSTAT=[["new","New","p-new"],["reviewing","Reviewing","p-mid"],["applied","Applied","p-good"],["interviewing","Interviewing","p-good"],["offer","Offer","p-good"],["rejected","Rejected","p-done"],["not_pursuing","Not pursuing","p-done"],["withdrawn","Withdrawn","p-done"],["inactive","No longer active","p-done"]];
 const JMAP=Object.fromEntries(JSTAT.map(s=>[s[0],s])),JDONE=["rejected","not_pursuing","withdrawn","inactive"];
@@ -576,7 +576,8 @@ function jMatch(j){
   if(f.status==="closed")return done||j.postingClosed;
   return s===f.status;
 }
-function renderJobs(){applyRT();
+function fillScope(id,list,allLabel){const el=$(id);if(!el)return;const cur=el.value;const act=list.filter(x=>x.active!==false);el.innerHTML=`<option value="">${allLabel}</option>`+act.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join("");el.value=act.some(x=>x.id===cur)?cur:""}
+function renderJobs(){applyRT();fillScope("jobs-scope",ieps,"All IEPs");
   const wk=weekOf(today());
   $("jobs-stats").innerHTML=statBox(jobs.filter(j=>["new","reviewing"].includes(j.status||"new")&&!j.postingClosed).length,"Open to review")+statBox(jobs.filter(j=>j.appliedDate).length,"Applied")+statBox(jobs.filter(j=>j.appliedDate&&weekOf(j.appliedDate)===wk).length,"Applied this week")+statBox(jobs.length,"Roles logged");
   $("j-status").innerHTML=opt([["active","Active"],["all","All"],["closed","Closed out"]].concat(JSTAT.map(s=>[s[0],s[1]])),F.j.status);
@@ -749,7 +750,7 @@ function pMatch(p){
   if(f.status==="closed")return FDONE.includes(s)||s==="won";
   return s===f.status;
 }
-function renderFrac(){
+function renderFrac(){fillScope("frac-scope",icps,"All ICPs");
   const st=p=>p.status||"new";
   $("frac-stats").innerHTML=statBox(prospects.filter(p=>["new","researching"].includes(st(p))).length,"To review")+statBox(prospects.filter(p=>st(p)==="outreach").length,"In outreach")+statBox(prospects.filter(p=>["conversation","proposal"].includes(st(p))).length,"In conversation or proposal")+statBox(prospects.filter(p=>p.hubspot&&p.hubspot.dealId).length,"In HubSpot")+statBox(prospects.length,"Logged");
   $("f-status").innerHTML=opt([["active","Active"],["all","All"],["closed","Closed out"]].concat(FSTAT.map(s=>[s[0],s[1]])),F.p.status);
@@ -1304,13 +1305,15 @@ $("settings-form").addEventListener("submit",async e=>{e.preventDefault();$("set
 function setupRuns(){
   if(!mcp||!canWrite)return;
   document.querySelectorAll(".runnotes").forEach(x=>x.hidden=false);
-  const wire=(btnId,notesId,trig,kind,label,prefix)=>{
+  const wire=(btnId,notesId,trig,kind,label,prefix,scopeId,scopeKey,scopeList)=>{
     const b=$(btnId);if(!triggerOk(trig))return;b.hidden=false;
     b.onclick=async()=>{b.disabled=true;const old=b.textContent;b.textContent="Starting";const extra=notesId?$(notesId).value.trim():"";
-      try{await startTask(trig,kind,label,null,extra?prefix+"\n"+extra:"Run the full search.");b.textContent="Started";setTimeout(()=>{b.disabled=false;b.textContent=old},4000)}catch(_){b.disabled=false;b.textContent=old}};
+      const sv=scopeId?$(scopeId).value:"",so=sv?scopeList().find(x=>x.id===sv):null;
+      const scopeLine=so?scopeKey+": "+so.id+" ("+(so.name||so.id)+")\n":"";
+      try{await startTask(trig,kind,so?label+": "+(so.name||so.id):label,null,scopeLine+(extra?prefix+"\n"+extra:(so?"Search only this profile.":"Run the full search.")));b.textContent="Started";setTimeout(()=>{b.disabled=false;b.textContent=old},4000)}catch(_){b.disabled=false;b.textContent=old}};
   };
-  wire("run-jobs","jobs-notes",T_JOBS,"search-jobs","Job search","Additional instructions for this run only:");
-  wire("run-frac","frac-notes",T_FRAC,"search-frac","Prospect search","Additional instructions for this run only. They override the ICP search focus where they conflict. Exclusions, verification and field rules still apply:");
+  wire("run-jobs","jobs-notes",T_JOBS,"search-jobs","Job search","Additional instructions for this run only:","jobs-scope","SEARCH ONLY IEP",()=>ieps);
+  wire("run-frac","frac-notes",T_FRAC,"search-frac","Prospect search","Additional instructions for this run only. They override the ICP search focus where they conflict. Exclusions, verification and field rules still apply:","frac-scope","SEARCH ONLY ICP",()=>icps);
   wire("check-email",null,T_EMAIL,"email","Email check","");
 }
 
