@@ -422,18 +422,19 @@ setInterval(renderActivity,30000);
 const pendingInbox=()=>inbox.filter(x=>x.state==="applied"||x.state==="suggested");
 function inboxHtml(x){
   const tgt=x.targetT&&x.targetId?findRec(x.targetT,x.targetId):null;
-  const what=x.state==="applied"?`Changed: ${esc(x.actionText||"record updated")}`:`Suggested: ${esc(x.actionText||"no matching record found")}`;
+  const what=x.state==="applied"?`Claude already made this change: ${esc(x.actionText||"record updated")}.`:`Claude did not change anything. Suggestion: ${esc(x.actionText||"no matching record found")}.`;
   return `<div class="inboxitem" data-inbox="${esc(x.id)}">
     <div><b>${esc(x.company||"Unknown company")}</b> · ${esc(x.kindLabel||x.kind||"Email")} · <span class="note">${esc(fmtT(x.emailAt||x.at))}</span></div>
     <div>${esc(x.summary||"")}</div>
     <div class="note">From ${esc(x.from||"")}${x.subject?`, "${esc(x.subject)}"`:""}</div>
     <div><b>${what}</b></div>
-    <div class="rowb">${x.state==="applied"?`<button class="btn primary sm" type="button" data-ib="keep">Keep</button><button class="btn sm" type="button" data-ib="undo">Undo</button>`:`<button class="btn sm" type="button" data-ib="dismiss">Dismiss</button>`}${tgt?`<button class="btn sm" type="button" data-open="${esc(x.targetT)}|${esc(x.targetId)}">Open ${x.targetT==="j"?"job":"prospect"}</button>`:""}<span class="saved"></span></div>
+    <div class="rowb">${x.state==="applied"?`<button class="btn primary sm" type="button" data-ib="keep">Looks right, clear it</button><button class="btn sm" type="button" data-ib="undo">Undo the change</button>`:`<button class="btn sm" type="button" data-ib="dismiss">Ignore</button>`}${tgt?`<button class="btn sm" type="button" data-open="${esc(x.targetT)}|${esc(x.targetId)}">See the ${x.targetT==="j"?"job":"prospect"}</button>`:""}<span class="saved"></span></div>
+    <div class="note">${x.state==="applied"?`"Looks right" keeps the change and removes this from the list. "Undo" puts the ${x.targetT==="p"?"prospect":"job"} back the way it was before the email.`:`"Ignore" removes this from the list. To act on it, add the job or prospect yourself.`}</div>
   </div>`;
 }
 function renderInbox(){
   const list=pendingInbox().sort((a,b)=>String(b.at).localeCompare(String(a.at)));
-  $("inbox-list").innerHTML=list.length?list.map(inboxHtml).join(""):`<div class="note">Nothing waiting. The email check runs each weekday morning and early afternoon and changes matching records itself; each change shows here for you to keep or undo.</div>`;
+  $("inbox-list").innerHTML=list.length?list.map(inboxHtml).join(""):`<div class="note">Nothing waiting. The email check runs each weekday morning and early afternoon and changes matching records itself. Each change shows here so you can confirm it or undo it.</div>`;
   const n=list.length+suggestions.filter(s=>s.state==="pending").length,b=$("inbox-badge");b.hidden=!n;b.textContent=n;
 }
 async function inboxAct(x,act,msg){
@@ -459,7 +460,7 @@ document.addEventListener("click",e=>{const o=e.target.closest("[data-open]");if
 function emailFlag(t,r){
   const c=r.emailChange;if(!c||!c.inboxId)return "";
   const x=inbox.find(i=>i.id===c.inboxId);if(!x||x.state!=="applied")return "";
-  return `<div class="emailflag" data-inbox="${esc(x.id)}"><span>Email check ${esc(fmtT(x.at))}: ${esc(x.actionText||"updated this record")}. ${esc(x.summary||"")}</span><span class="rowb"><button class="btn primary sm" type="button" data-ib="keep">Keep</button><button class="btn sm" type="button" data-ib="undo">Undo</button><span class="saved"></span></span></div>`;
+  return `<div class="emailflag" data-inbox="${esc(x.id)}"><span>From your email, ${esc(fmtT(x.at))}. Change made: ${esc(x.actionText||"record updated")}. ${esc(x.summary||"")}</span><span class="rowb"><button class="btn primary sm" type="button" data-ib="keep">Looks right, clear it</button><button class="btn sm" type="button" data-ib="undo">Undo the change</button><span class="saved"></span></span></div>`;
 }
 
 /* ================= dashboard ================= */
