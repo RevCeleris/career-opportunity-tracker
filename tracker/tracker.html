@@ -266,7 +266,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ================= constants ================= */
-const APP_VERSION="4.1";
+const APP_VERSION="4.2";
 let T_JOBS="",T_FRAC="",T_ASSIST="",T_EMAIL="",T_UPDATE="";
 const JSTAT=[["new","New","p-new"],["reviewing","Reviewing","p-mid"],["applied","Applied","p-good"],["interviewing","Interviewing","p-good"],["offer","Offer","p-good"],["rejected","Rejected","p-done"],["not_pursuing","Not pursuing","p-done"],["withdrawn","Withdrawn","p-done"],["inactive","No longer active","p-done"]];
 const JMAP=Object.fromEntries(JSTAT.map(s=>[s[0],s])),JDONE=["rejected","not_pursuing","withdrawn","inactive"];

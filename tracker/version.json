@@ -1,5 +1,5 @@
 {
-  "version": "4.1",
-  "notes": "Run a search for just one profile. A new Run for picker next to Run job search now and Run prospect search now lets you search a single IEP or ICP, or all of them as before.",
+  "version": "4.2",
+  "notes": "Fewer closed jobs. Before a job is added, Claude now checks the company's hiring system (Greenhouse, Lever, Ashby, Workable or SmartRecruiters) to confirm the job is still open, and skips any job it cannot read in full on the employer's own page. Jobs already in your tracker get the same check twice a week.",
   "url": "https://www.doovli.app/"
 }
