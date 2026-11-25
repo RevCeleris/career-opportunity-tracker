@@ -23,6 +23,8 @@ section[role=tabpanel]{display:grid;gap:16px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:120px}
 .stat b{display:block;font:500 22px/1.1 var(--mono);font-variant-numeric:tabular-nums}
 .stat span{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+button.stat{font:inherit;color:inherit;text-align:left;cursor:pointer}button.stat:hover{border-color:var(--accent,#2b6cb0)}button.stat:focus-visible{outline:2px solid var(--accent,#2b6cb0);outline-offset:2px}
+.prebar{display:flex;gap:10px;align-items:center;margin:0 0 10px;font-size:14px}.prebar[hidden]{display:none}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .wkf{display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px}
@@ -163,7 +165,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
 
   <!-- JOBS -->
   <section id="view-jobs" role="tabpanel" aria-labelledby="tab-jobs" hidden>
-    <div class="strip" id="jobs-stats"></div>
+    <div class="strip" id="jobs-stats"></div><div class="prebar" id="j-prebar" hidden></div>
     <div class="searching" id="jobs-searching"></div>
     <div class="bar">
       <div class="filters">
@@ -197,7 +199,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
 
   <!-- FRACTIONAL -->
   <section id="view-frac" role="tabpanel" aria-labelledby="tab-frac" hidden>
-    <div class="strip" id="frac-stats"></div>
+    <div class="strip" id="frac-stats"></div><div class="prebar" id="p-prebar" hidden></div>
     <div class="searching" id="frac-searching"></div>
     <div class="bar">
       <div class="filters">
@@ -266,7 +268,7 @@ table.ws tr.off td{opacity:.45;text-decoration:line-through}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ================= constants ================= */
-const APP_VERSION="4.2";
+const APP_VERSION="4.3";
 let T_JOBS="",T_FRAC="",T_ASSIST="",T_EMAIL="",T_UPDATE="";
 const JSTAT=[["new","New","p-new"],["reviewing","Reviewing","p-mid"],["applied","Applied","p-good"],["interviewing","Interviewing","p-good"],["offer","Offer","p-good"],["rejected","Rejected","p-done"],["not_pursuing","Not pursuing","p-done"],["withdrawn","Withdrawn","p-done"],["inactive","No longer active","p-done"]];
 const JMAP=Object.fromEntries(JSTAT.map(s=>[s[0],s])),JDONE=["rejected","not_pursuing","withdrawn","inactive"];
@@ -299,7 +301,7 @@ Cover letter: 4 to 6 short paragraphs of plain connected prose, opening with som
 let offer={},tasks={},suggestions=[],ieps=[],jobset={},jobs=[],prospects=[],icps=[],settings={},profile={},research={},activity=[],inbox=[];
 let db=null,mcp=null,sample=null,dl=null,canWrite=true;
 let curTab="dashboard";
-const F={j:{status:"active",type:"",iep:"",q:"",week:""},p:{status:"active",icp:"",off:"",q:""}};
+const F={j:{status:"active",type:"",iep:"",q:"",week:"",pre:""},p:{status:"active",icp:"",off:"",q:"",pre:""}};
 const busy=new Map(),hsPending=new Map(),openJD=new Set(),openDocAdd=new Set(),openChats=new Set(),moving=new Map(),kindSel=new Map();
 const chatDraft={},chatLive={},chatCtl={},chatNote={};
 const timers={};
@@ -464,7 +466,30 @@ function emailFlag(t,r){
 }
 
 /* ================= dashboard ================= */
-function statBox(n,l){return `<div class="stat"><b>${n}</b><span>${esc(l)}</span></div>`}
+function statBox(n,l,go){return go?`<button type="button" class="stat" data-go="${go}" title="Show these records"><b>${n}</b><span>${esc(l)}</span></button>`:`<div class="stat"><b>${n}</b><span>${esc(l)}</span></div>`}
+const jOpen=j=>["new","reviewing"].includes(j.status||"new")&&!j.postingClosed;
+const pSt=p=>p.status||"new";
+const PRE={
+  "j:review":["To review",jOpen],
+  "j:applied":["Applied (all time)",j=>!!j.appliedDate],
+  "j:appliedwk":["Applied this week",j=>!!j.appliedDate&&weekOf(j.appliedDate)===weekOf(today())],
+  "j:interviewing":["Interviewing",j=>(j.status||"new")==="interviewing"],
+  "j:offer":["Offers",j=>(j.status||"new")==="offer"],
+  "j:all":["All roles logged",()=>true],
+  "p:newwk":["New this week",p=>weekOf(p.foundDate)===weekOf(today())],
+  "p:review":["To review",p=>["new","researching"].includes(pSt(p))],
+  "p:outreach":["Outreach sent",p=>pSt(p)==="outreach"],
+  "p:conv":["In conversation or proposal",p=>["conversation","proposal"].includes(pSt(p))],
+  "p:hubspot":["In HubSpot",p=>!!(p.hubspot&&p.hubspot.dealId)],
+  "p:all":["All prospects logged",()=>true]
+};
+function preBar(t){const k=F[t].pre,el=$(t==="j"?"j-prebar":"p-prebar");if(!el)return;if(!k||!PRE[k]){el.hidden=true;return}el.hidden=false;el.innerHTML=`<span>Showing: <b>${esc(PRE[k][0])}</b></span><button class="btn" type="button" data-clearpre="${t}">Back to the full list</button>`}
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-go]");
+  if(g){const k=g.dataset.go,t=k[0],tab=t==="j"?"jobs":"frac";if(!featOn(tab))return;F[t].pre=k;F[t].q="";const q=$(t==="j"?"j-q":"f-q");if(q)q.value="";t==="j"?renderJobs():renderFrac();showTab(tab);try{$(t==="j"?"jobs-list":"frac-list").scrollIntoView({block:"start"})}catch(_){}return}
+  const c=e.target.closest("[data-clearpre]");
+  if(c){const t=c.dataset.clearpre;F[t].pre="";t==="j"?renderJobs():renderFrac()}
+});
 function vnum(v){return String(v||"0").split(".").map(n=>+n||0)}
 function newer(a,b){const x=vnum(a),y=vnum(b);for(let i=0;i<Math.max(x.length,y.length);i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)>(y[i]||0)}return false}
 let updateInfo={};
@@ -514,9 +539,9 @@ document.addEventListener("change",async e=>{const el=e.target.closest("[data-fe
 function renderDashboard(){renderUpdate();renderFeatures();
   const wk=weekOf(today());
   const js=s=>jobs.filter(j=>(j.status||"new")===s).length;
-  $("dash-jobs-stats").innerHTML=statBox(jobs.filter(j=>["new","reviewing"].includes(j.status||"new")&&!j.postingClosed).length,"To review")+statBox(jobs.filter(j=>j.appliedDate&&weekOf(j.appliedDate)===wk).length,"Applied this week")+statBox(js("interviewing"),"Interviewing")+statBox(js("offer"),"Offers");
+  $("dash-jobs-stats").innerHTML=statBox(jobs.filter(jOpen).length,"To review","j:review")+statBox(jobs.filter(j=>j.appliedDate&&weekOf(j.appliedDate)===wk).length,"Applied this week","j:appliedwk")+statBox(js("interviewing"),"Interviewing","j:interviewing")+statBox(js("offer"),"Offers","j:offer");
   const ps=s=>prospects.filter(p=>(p.status||"new")===s).length;
-  $("dash-frac-stats").innerHTML=statBox(prospects.filter(p=>weekOf(p.foundDate)===wk).length,"New this week")+statBox(ps("outreach"),"Outreach sent")+statBox(ps("conversation")+ps("proposal"),"In conversation")+statBox(prospects.filter(p=>p.hubspot&&p.hubspot.dealId).length,"In HubSpot");
+  $("dash-frac-stats").innerHTML=statBox(prospects.filter(p=>weekOf(p.foundDate)===wk).length,"New this week","p:newwk")+statBox(ps("outreach"),"Outreach sent","p:outreach")+statBox(ps("conversation")+ps("proposal"),"In conversation","p:conv")+statBox(prospects.filter(p=>p.hubspot&&p.hubspot.dealId).length,"In HubSpot","p:hubspot");
   const recent=(arr,t,lbl)=>{
     const when=x=>String(x.lastUpdated||x.foundDate||"");
     const r=arr.slice().sort((a,b)=>when(b).localeCompare(when(a))).slice(0,6);
@@ -570,6 +595,7 @@ $("ws-export").onclick=async()=>{
 /* ================= JOBS ================= */
 function jMatch(j){
   const f=F.j;
+  if(f.pre&&PRE[f.pre])return PRE[f.pre][1](j)&&(!f.q||[j.company,j.title,j.location,j.sector,j.contact,j.notes].join(" ").toLowerCase().includes(f.q));
   if(f.q&&![j.company,j.title,j.location,j.sector,j.contact,j.notes].join(" ").toLowerCase().includes(f.q))return false;
   if(f.type&&(RT[j.roleType]?j.roleType:"none")!==f.type)return false;
   if(f.iep){const i=iepFor(j);if(!i||i.id!==f.iep)return false}
@@ -583,19 +609,19 @@ function jMatch(j){
 function fillScope(id,list,allLabel){const el=$(id);if(!el)return;const cur=el.value;const act=list.filter(x=>x.active!==false);el.innerHTML=`<option value="">${allLabel}</option>`+act.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join("");el.value=act.some(x=>x.id===cur)?cur:""}
 function renderJobs(){applyRT();fillScope("jobs-scope",ieps,"All IEPs");
   const wk=weekOf(today());
-  $("jobs-stats").innerHTML=statBox(jobs.filter(j=>["new","reviewing"].includes(j.status||"new")&&!j.postingClosed).length,"Open to review")+statBox(jobs.filter(j=>j.appliedDate).length,"Applied")+statBox(jobs.filter(j=>j.appliedDate&&weekOf(j.appliedDate)===wk).length,"Applied this week")+statBox(jobs.length,"Roles logged");
+  $("jobs-stats").innerHTML=statBox(jobs.filter(jOpen).length,"Open to review","j:review")+statBox(jobs.filter(j=>j.appliedDate).length,"Applied","j:applied")+statBox(jobs.filter(j=>j.appliedDate&&weekOf(j.appliedDate)===wk).length,"Applied this week","j:appliedwk")+statBox(jobs.length,"Roles logged","j:all");
   $("j-status").innerHTML=opt([["active","Active"],["all","All"],["closed","Closed out"]].concat(JSTAT.map(s=>[s[0],s[1]])),F.j.status);
   $("j-type").value=F.j.type;
   {const wks=[...new Set(jobs.filter(j=>j.appliedDate).map(j=>weekOf(j.appliedDate)).filter(Boolean))].sort().reverse();if(F.j.week&&!wks.includes(F.j.week))F.j.week="";$("j-week").innerHTML=`<option value="">Any week</option>`+wks.map(w=>`<option value="${w}"${w===F.j.week?" selected":""}>Week of ${mdy(w)}</option>`).join("")}
   $("j-iep").innerHTML=`<option value="">All IEPs</option>`+ieps.map(i=>`<option value="${esc(i.id)}"${i.id===F.j.iep?" selected":""}>${esc(i.name)}</option>`).join("");
-  if(!jobs.length){$("jobs-list").innerHTML=`<div class="empty">No roles yet. The job search adds them each Monday and Thursday.</div>`;return}
-  const shown=jobs.filter(jMatch).sort((a,b)=>(b.foundDate||"").localeCompare(a.foundDate||"")||String(a.company).localeCompare(b.company));
+  preBar("j");if(!jobs.length){$("jobs-list").innerHTML=`<div class="empty">No roles yet. The job search adds them each Monday and Thursday.</div>`;return}
+  preBar("j");const shown=jobs.filter(jMatch).sort((a,b)=>(b.foundDate||"").localeCompare(a.foundDate||"")||String(a.company).localeCompare(b.company));
   $("jobs-list").innerHTML=shown.length?shown.map(jobCard).join(""):`<div class="empty">Nothing in this view. Try "All".</div>`;
 }
-$("j-status").onchange=e=>{F.j.status=e.target.value;renderJobs()};
-$("j-type").onchange=e=>{F.j.type=e.target.value;renderJobs()};
-$("j-iep").onchange=e=>{F.j.iep=e.target.value;renderJobs()};
-$("j-week").onchange=e=>{F.j.week=e.target.value;renderJobs()};
+$("j-status").onchange=e=>{F.j.pre="";F.j.status=e.target.value;renderJobs()};
+$("j-type").onchange=e=>{F.j.pre="";F.j.type=e.target.value;renderJobs()};
+$("j-iep").onchange=e=>{F.j.pre="";F.j.iep=e.target.value;renderJobs()};
+$("j-week").onchange=e=>{F.j.pre="";F.j.week=e.target.value;renderJobs()};
 $("j-q").oninput=e=>{F.j.q=e.target.value.trim().toLowerCase();renderJobs()};
 
 function jobCard(j){
@@ -746,6 +772,7 @@ $("addjob-form").addEventListener("submit",async e=>{
 /* ================= FRACTIONAL ================= */
 function pMatch(p){
   const f=F.p,s=p.status||"new";
+  if(f.pre&&PRE[f.pre]){if(!PRE[f.pre][1](p))return false;if(f.q){const sig=(p.signals||[]).map(x=>x.text).join(" ");return [p.company,p.domain,p.title,p.fit,p.notes,sig,p.icpName].join(" ").toLowerCase().includes(f.q)}return true}
   if(f.icp==="__multi"){if(!multi(p))return false}else if(f.icp&&!icpList(p).some(i=>i.id===f.icp)&&p.icpId!==f.icp)return false;
   if(f.off&&p.offering!==f.off)return false;
   if(f.q){const sig=(p.signals||[]).map(x=>x.text).join(" ");if(![p.company,p.domain,p.title,p.fit,p.notes,sig,p.icpName].join(" ").toLowerCase().includes(f.q))return false}
@@ -756,18 +783,18 @@ function pMatch(p){
 }
 function renderFrac(){fillScope("frac-scope",icps,"All ICPs");
   const st=p=>p.status||"new";
-  $("frac-stats").innerHTML=statBox(prospects.filter(p=>["new","researching"].includes(st(p))).length,"To review")+statBox(prospects.filter(p=>st(p)==="outreach").length,"In outreach")+statBox(prospects.filter(p=>["conversation","proposal"].includes(st(p))).length,"In conversation or proposal")+statBox(prospects.filter(p=>p.hubspot&&p.hubspot.dealId).length,"In HubSpot")+statBox(prospects.length,"Logged");
+  $("frac-stats").innerHTML=statBox(prospects.filter(p=>["new","researching"].includes(st(p))).length,"To review","p:review")+statBox(prospects.filter(p=>st(p)==="outreach").length,"In outreach","p:outreach")+statBox(prospects.filter(p=>["conversation","proposal"].includes(st(p))).length,"In conversation or proposal","p:conv")+statBox(prospects.filter(p=>p.hubspot&&p.hubspot.dealId).length,"In HubSpot","p:hubspot")+statBox(prospects.length,"Logged","p:all");
   $("f-status").innerHTML=opt([["active","Active"],["all","All"],["closed","Closed out"]].concat(FSTAT.map(s=>[s[0],s[1]])),F.p.status);
   $("f-icp").innerHTML=`<option value="">All ICPs</option><option value="__multi"${F.p.icp==="__multi"?" selected":""}>Covers more than one</option>`+icps.map(i=>`<option value="${esc(i.id)}"${i.id===F.p.icp?" selected":""}>${esc(i.name)}</option>`).join("");
   $("f-off").innerHTML=`<option value="">All offerings</option>`+OFFERS.map(([k,l])=>`<option value="${k}"${k===F.p.off?" selected":""}>${l}</option>`).join("");
   $("ap-icp").innerHTML=icps.map(i=>`<option value="${esc(i.id)}">${esc(i.name)}</option>`).join("")||`<option value="">No ICPs yet</option>`;
-  if(!prospects.length){$("frac-list").innerHTML=`<div class="empty">No prospects yet. The prospect search adds them each Monday and Thursday.</div>`;return}
-  const shown=prospects.filter(pMatch).sort((a,b)=>(b.foundDate||"").localeCompare(a.foundDate||"")||(+b.score||0)-(+a.score||0)||String(a.company).localeCompare(b.company));
+  preBar("p");if(!prospects.length){$("frac-list").innerHTML=`<div class="empty">No prospects yet. The prospect search adds them each Monday and Thursday.</div>`;return}
+  preBar("p");const shown=prospects.filter(pMatch).sort((a,b)=>(b.foundDate||"").localeCompare(a.foundDate||"")||(+b.score||0)-(+a.score||0)||String(a.company).localeCompare(b.company));
   $("frac-list").innerHTML=shown.length?shown.map(fracCard).join(""):`<div class="empty">Nothing in this view. Try "All".</div>`;
 }
-$("f-status").onchange=e=>{F.p.status=e.target.value;renderFrac()};
-$("f-icp").onchange=e=>{F.p.icp=e.target.value;renderFrac()};
-$("f-off").onchange=e=>{F.p.off=e.target.value;renderFrac()};
+$("f-status").onchange=e=>{F.p.pre="";F.p.status=e.target.value;renderFrac()};
+$("f-icp").onchange=e=>{F.p.pre="";F.p.icp=e.target.value;renderFrac()};
+$("f-off").onchange=e=>{F.p.pre="";F.p.off=e.target.value;renderFrac()};
 $("f-q").oninput=e=>{F.p.q=e.target.value.trim().toLowerCase();renderFrac()};
 
 function fracCard(p){
